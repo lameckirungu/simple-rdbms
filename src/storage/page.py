@@ -82,10 +82,10 @@ class Page:
 
         if 0 <= row_index < len(self.rows):
             # Check if updated row still fits
-            old_size = len(json.dumps(self.rows[row_index]).encode('utf'))
+            old_size = len(json.dumps(self.rows[row_index]).encode('utf-8'))
             new_size = len(json.dumps(new_data).encode('utf-8'))
 
-            if new_size <= old_size or self.can_fit(new_size):
+            if new_size <= old_size or self.can_fit(new_data):
                 self.rows[row_index] = new_data
                 # Recalculate free space offset
                 self._recalculate_free_space()
@@ -96,11 +96,11 @@ class Page:
         if 0 <= row_index < len(self.rows):
             self.rows.pop(row_index)
             self.num_rows -= 1
-            self._recalcuate_free_space()
+            self._recalculate_free_space()
             return True
         return False
     
-    def _recalcuate_free_space(self):
+    def _recalculate_free_space(self):
         """Recalculate the free space offset after modifications."""
         used_space = HEADER_SIZE
         for row in self.rows:
@@ -135,30 +135,30 @@ class Page:
 
         return page_data
     
-@staticmethod
-def deserialize(data: bytes) -> 'Page':
-    """ 
-    Reconstruct a Page object from bystes read from disk.
-    """
+    @staticmethod
+    def deserialize(data: bytes) -> 'Page':
+        """ 
+        Reconstruct a Page object from bystes read from disk.
+        """
 
-    # read header
-    page_id, num_rows, free_space_offset = struct.unpack('III', data[:HEADER_SIZE])
+        # read header
+        page_id, num_rows, free_space_offset = struct.unpack('III', data[:HEADER_SIZE])
 
-    # CREATE PAGE
-    page = Page(page_id)
-    page.num_rows = num_rows
-    page.free_space_offset = free_space_offset
+        # CREATE PAGE
+        page = Page(page_id)
+        page.num_rows = num_rows
+        page.free_space_offset = free_space_offset
 
-    # read rows
-    offset = HEADER_SIZE
-    for _ in range(num_rows):
-        row_length = struct.unpack('I', data[offset:offset+4])[0]
-        offset += 4
-        row_json = data[offset:offset+4+row_length].decode('utf-8')
-        offset += row_length
-        page.rows.append(json.loads(row_json))
+        # read rows
+        offset = HEADER_SIZE
+        for _ in range(num_rows):
+            row_length = struct.unpack('I', data[offset:offset+4])[0]
+            offset += 4
+            row_json = data[offset:offset+4+row_length].decode('utf-8')
+            offset += row_length
+            page.rows.append(json.loads(row_json))
 
-    return page
+        return page
 
-def __repr__(self):
-    return f"Page(id={self.page_id}, rows={self.num_rows}, free_space={PAGE_SIZE - self.free_space_offset}B)"
+    def __repr__(self):
+        return f"Page(id={self.page_id}, rows={self.num_rows}, free_space={PAGE_SIZE - self.free_space_offset}B)"
